@@ -23,4 +23,42 @@ const SyncUserCreation = inngest.createFunction(
   },
 );
 
-export const functions = [SyncUserCreation];
+//inngest function to update user in database
+const SyncUserUpdate = inngest.createFunction(
+  {
+    id: "update-user-from-clerk",
+    triggers: { event: "clerk/user.updated" },
+  },
+  async ({ event }) => {
+    const { data } = event;
+    await prisma.user.update({
+      where:{
+        id:data.id
+      },
+      data: {
+        email: data?.email_addresses[0]?.email_address,
+        name: data?.first_name + " " + data?.last_name,
+        image: data?.image_url,
+      },
+    });
+  },
+);
+
+//inngest function to delete user from databse
+const SyncUserDelete = inngest.createFunction(
+  {
+    id: "delete-user-from-clerk",
+    triggers: { event: "clerk/user.deleted" },
+  },
+  async ({ event }) => {
+    const { data } = event;
+    await prisma.user.delete({
+      where:{
+        id:data.id
+      }
+    });
+  },
+);
+
+
+export const functions = [SyncUserCreation, SyncUserUpdate, SyncUserDelete];
