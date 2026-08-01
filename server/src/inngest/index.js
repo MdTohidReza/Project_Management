@@ -120,7 +120,7 @@ const syncWorkspaceDeletion = inngest.createFunction(
 )
 
 //inngest function to save workspace member data to a database
-const asyncWorkspaceMemberCreation = inngest.createFunction(
+const syncWorkspaceMemberCreation = inngest.createFunction(
   { id: "async-workspace-member-from-clerk"},
   {event:"clerk/organizationInvitation.accepted"},
 
@@ -144,5 +144,5 @@ export const functions = [
   syncWorkspaceCreation,
   syncWorkspaceUpdation,
   syncWorkspaceDeletion ,
-  asyncWorkspaceMemberCreation,
+  syncWorkspaceMemberCreation,
 ];
