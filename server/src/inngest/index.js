@@ -134,11 +134,15 @@ const asyncWorkspaceMemberCreation = inngest.createFunction(
       }
   })
   }
-); 
+);
+
 
 export const functions = [
   SyncUserCreation,
   SyncUserUpdate,
   SyncUserDelete,
   syncWorkspaceCreation,
+  syncWorkspaceUpdation,
+  syncWorkspaceDeletion ,
+  asyncWorkspaceMemberCreation,
 ];
