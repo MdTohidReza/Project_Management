@@ -4,6 +4,8 @@ import cors from 'cors'
 import { clerkMiddleware } from "@clerk/express";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./src/inngest/index.js"
+import { protect } from './middleware/authMiddleware.js';
+import workspaceRouter from './routes/workspaceRoute.js';
 
 const app = express()
 
@@ -17,6 +19,9 @@ app.get('/',(req,res)=>
 )
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
+
+//Router
+app.use('/api/workspaces',protect,workspaceRouter)
 
 const PORT = process.env.PORT || 5000
 
