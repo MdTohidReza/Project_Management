@@ -4,7 +4,7 @@ import { prisma } from "../src/db.js";
 export const getUserWorkspaces = async (req, res) => {
   try {
     const { userId } = await req.auth();
-    const workspace = await prisma.workspace.findMany({
+    const workspaces = await prisma.workspace.findMany({
       where: {
         members: { some: { userId: userId } },
       },
@@ -24,7 +24,7 @@ export const getUserWorkspaces = async (req, res) => {
         owner: true,
       },
     });
-    res.json(workspace);
+    res.json({ workspaces });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.code || error.message });
@@ -83,6 +83,7 @@ export const addMember = async (req, res) => {
         message,
       },
     });
+    res.json({ member, message: "Member added successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ member, message: error.code || error.message });
