@@ -1,5 +1,6 @@
 import { Inngest } from "inngest";
 import { prisma } from "../db.js";
+import sendEmail from "../../configs/nodeMailer.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "PERN-project" });
@@ -146,6 +147,103 @@ const syncWorkspaceMemberCreation = inngest.createFunction(
   },
 );
 
+//inngest function to send email on Task creation
+const sendTaskAssignmentEmail = inngest.createFunction(
+  {
+    id: "send-task-assignment-email",
+    triggers: { event: "app/task.assigned" },
+  },
+  async ({ event, step }) => {
+    const { taskId, origin } = event.data;
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { assignee: true, project: true },
+    });
+
+    const taskUrl = `${origin}/project/${task.projectId}/task/${task.id}`;
+    const dueDate = new Date(task.due_date).toDateString();
+
+    await sendEmail({
+      to: task.assignee.email,
+      subject: `New Task Assignment in ${task.project.name}`,
+      body: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f9fafb; border-radius: 8px;">
+          <h2 style="color: #1f2937; margin-bottom: 4px;">New Task Assigned</h2>
+          <p style="color: #6b7280; margin-top: 0;">You've been assigned a new task in <strong>${task.project.name}</strong>.</p>
+
+          <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0;"><strong>Task:</strong> ${task.title}</p>
+            <p style="margin: 0 0 8px 0;"><strong>Description:</strong> ${task.description || "No description provided"}</p>
+            <p style="margin: 0;"><strong>Due Date:</strong> ${dueDate}</p>
+          </div>
+
+          <a href="${taskUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 500;">
+            View Task
+          </a>
+
+          <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">
+            Please review the task details and complete it before the due date. If you have any questions, reach out to your project lead.
+          </p>
+        </div>
+      `,
+    });
+    if(new Date(task.due_date).toLocaleDateString() !== new Date().toDateString()){
+      await step.sleepUntil('wait-for-the-due-date',new Date(task.due_date));
+      await step.run('check-if-task-is-completed', async()=>{
+        const task = await prisma.task.findUnique({
+          where:{id:taskId},
+          include:{assignee:true,project:true}
+        })
+        if(!task) return
+        if(task.status !== 'DONE'){
+          await step.run('send-reminder-email',async()=>{
+            await sendEmail({
+              to: task.assignee.email,
+              subject: `Reminder: Task "${task.title}" is due today`,
+              body:`
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f9fafb; border-radius: 8px;">
+                  <h2 style="color: #1f2937; margin-bottom: 4px;">
+                    Reminder: Task Due Today
+                  </h2>
+                  <p style="color: #6b7280; margin-top: 0;">
+                    You've been assigned a new task in{" "}
+                    <strong>${task.project.name}</strong>.
+                  </p>
+
+                  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px 0;">
+                      <strong>Task:</strong> ${task.title}
+                    </p>
+                    <p style="margin: 0 0 8px 0;">
+                      <strong>Description:</strong> $
+                      {task.description || "No description provided"}
+                    </p>
+                    <p style="margin: 0;">
+                      <strong>Due Date:</strong> ${dueDate}
+                    </p>
+                  </div>
+
+                  <a
+                    href="${taskUrl}"
+                    style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 500;"
+                  >
+                    View Task
+                  </a>
+
+                  <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">
+                    Please review the task details and complete it before the
+                    due date. If you have any questions, reach out to your
+                    project lead.
+                  </p>
+                </div>`
+            });
+          })
+        }
+      })
+    }
+  },
+);
+
 
 export const functions = [
   SyncUserCreation,
@@ -155,4 +253,5 @@ export const functions = [
   syncWorkspaceUpdation,
   syncWorkspaceDeletion ,
   syncWorkspaceMemberCreation,
+  sendTaskAssignmentEmail,
 ];

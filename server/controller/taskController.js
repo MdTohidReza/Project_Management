@@ -18,7 +18,7 @@ export const createTask = async (req, res) => {
     } = req.body;
     const origin = req.get("origin");
 
-    //chech if user has admin for project
+    //check if user has admin for project
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: { members: { include: { user: true } } },
