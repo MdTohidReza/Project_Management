@@ -31,8 +31,8 @@ export const createTask = async (req, res) => {
         .status(403)
         .json({ message: "You don't have admin privilieges for this project" });
     } else if (
-      assigneedId &&
-      !project.members.find((member) => member.user.id === assigneedId)
+      assigneeId &&
+      !project.members.find((member) => member.user.id === assigneeId)
     ) {
       return res
         .status(403)
