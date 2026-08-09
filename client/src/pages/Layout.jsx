@@ -5,7 +5,12 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loadTheme } from "../features/themeSlice";
 import { Loader2Icon } from "lucide-react";
-import { useUser, SignIn, useAuth, CreateOrganization } from "@clerk/react";
+import {
+  useUser,
+  SignIn,
+  useAuth,
+  CreateOrganization,
+} from "@clerk/clerk-react";
 import { fetchWorkspaces } from "../features/workspaceSlice";
 
 const Layout = () => {
@@ -26,11 +31,7 @@ const Layout = () => {
     }
   }, [isLoaded, user]);
 
-  useEffect(() => {
-    if (!loading && user && workspaces.length > 0) {
-      navigate("/");
-    }
-  }, [loading, user, workspaces.length, navigate]);
+
 
   if (!user) {
     return (

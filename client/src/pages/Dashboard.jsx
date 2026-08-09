@@ -5,7 +5,7 @@ import ProjectOverview from '../components/ProjectOverview'
 import RecentActivity from '../components/RecentActivity'
 import TasksSummary from '../components/TasksSummary'
 import CreateProjectDialog from '../components/CreateProjectDialog'
-import {useUser} from "@clerk/react";
+import { useUser } from "@clerk/clerk-react";
 
 const Dashboard = () => {
 
