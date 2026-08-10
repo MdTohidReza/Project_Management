@@ -85,7 +85,7 @@ export const updateProject = async(req,res)=>{
             return res.status(404).json({message:"Workspace not found"})
         }
         if(!workspace.members.some((member)=>member.id === userId && member.role === "ADMIN")){
-            const project = await prisma.project.findunique({
+            const project = await prisma.project.findUnique({
                 where:{id}
             })
             if(!project){
