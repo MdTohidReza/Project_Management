@@ -14,7 +14,14 @@ const app = express()
 
 
 app.use(express.json())
-app.use(cors())
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://project-management-786.vercel.app",
+    ],
+  }),
+);
 app.use(clerkMiddleware());
 
 app.get('/',(req,res)=>
