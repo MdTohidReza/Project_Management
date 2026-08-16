@@ -1,14 +1,17 @@
-import { useClerk, useOrganizationList } from "@clerk/clerk-react";
+import { useClerk, useOrganizationList,useOrganization } from "@clerk/clerk-react";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {  useSelector } from "react-redux";
 import { useAppDispatch } from "../app/hooks"
 import { useNavigate } from "react-router-dom";
 import { setCurrentWorkspace } from "../features/workspaceSlice";
+import { deleteWorkspace } from "../features/workspaceSlice";
 
 function WorkspaceDropdown() {
 
     const { setActive, userMemberships, isLoaded } = useOrganizationList({ userMemberships: true });
+    const { organization } = useOrganization();
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const {openCreateOrganization} = useClerk()
 
@@ -26,6 +29,8 @@ function WorkspaceDropdown() {
         setIsOpen(false);
         navigate('/');
     };
+
+    
 
     // Close dropdown on outside click
     useEffect(() => {
