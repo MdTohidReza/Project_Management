@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { workspaces, workspaceMembers, users } from "../db/schema";
 import { eq, and } from "drizzle-orm";
+import { createClerkClient } from "@clerk/backend";
 
 // Get all workspaces of a user
 export async function getUserWorkspaces(userId: string) {
@@ -99,4 +100,34 @@ export async function addMember(input: {
     .returning();
 
   return { status: 200, body: { member, message: "Member added successfully" } };
+}
+
+
+//delete workspace
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
+
+export async function deleteWorkspaceById(userId: string, workspaceId: string) {
+  const workspace = await db.query.workspaces.findFirst({
+    where: eq(workspaces.id, workspaceId),
+    with: { members: true },
+  });
+  if (!workspace) {
+    return { status: 404, body: { message: "Workspace not found" } };
+  }
+
+  const isAdmin = workspace.members.find(
+    (member) => member.userId === userId && member.role === "ADMIN"
+  );
+  if (!isAdmin) {
+    return { status: 403, body: { message: "You are not an admin of this workspace" } };
+  }
+
+  // Deletes on Clerk's side — this fires the "organization.deleted" webhook,
+  // which your existing syncWorkspaceDeletion Inngest function picks up
+  // to automatically remove the row from Neon.
+  await clerkClient.organizations.deleteOrganization(workspaceId);
+
+  return { status: 200, body: { message: "Workspace deleted successfully" } };
 }

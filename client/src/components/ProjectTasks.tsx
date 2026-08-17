@@ -63,7 +63,7 @@ const ProjectTasks = ({ tasks }) => {
     try {
         toast.loading("Updating status...");
         const token = await getToken()
-        await api.put(`/api/task/${taskId}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } })
+        await api.put(`/api/tasks/${taskId}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } })
 
         const updatedTask = structuredClone(tasks.find((t) => t.id === taskId));
         if (updatedTask) {
@@ -86,7 +86,7 @@ const ProjectTasks = ({ tasks }) => {
             const token = await  getToken()
             toast.loading("Deleting tasks...");
             //  Simulate API call
-            await api.post('/api/task/delete',{taskIds:selectedTasks},{headers:{Authorization: `Bearer ${token}`}})
+            await api.post('/api/tasks/delete',{taskIds:selectedTasks},{headers:{Authorization: `Bearer ${token}`}})
             // dispatch(deleteTask(selectedTasks));
             toast.dismiss();
             toast.success("Tasks deleted successfully");

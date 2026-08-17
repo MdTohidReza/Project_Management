@@ -1,19 +1,19 @@
-import { useClerk, useOrganizationList,useOrganization } from "@clerk/clerk-react";
+import { useClerk, useOrganizationList, useAuth } from "@clerk/clerk-react";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import {  useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useAppDispatch } from "../app/hooks"
 import { useNavigate } from "react-router-dom";
-import { setCurrentWorkspace } from "../features/workspaceSlice";
-import { deleteWorkspace } from "../features/workspaceSlice";
+import { setCurrentWorkspace, deleteWorkspace } from "../features/workspaceSlice";
+import api from "../configs/api"; 
 
 function WorkspaceDropdown() {
 
     const { setActive, userMemberships, isLoaded } = useOrganizationList({ userMemberships: true });
-    const { organization } = useOrganization();
+    const { getToken } = useAuth();
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const {openCreateOrganization} = useClerk()
+    const { openCreateOrganization } = useClerk()
 
     const { workspaces } = useSelector((state) => state.workspace);
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
@@ -30,7 +30,30 @@ function WorkspaceDropdown() {
         navigate('/');
     };
 
-    
+    const handleDeleteWorkspace = async (e: React.MouseEvent, workspaceId: string) => {
+        e.stopPropagation(); 
+
+        const confirmed = window.confirm(
+            "Delete this workspace? This will permanently remove all its projects and tasks."
+        );
+        if (!confirmed) return;
+
+        setIsDeleting(true);
+        try {
+            const token = await getToken();
+            await api.delete(`/api/workspaces/${workspaceId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            dispatch(deleteWorkspace(workspaceId));
+            userMemberships?.revalidate?.();
+        } catch (err) {
+            console.error("Failed to delete workspace:", err);
+            alert("Failed to delete workspace. You may not have permission.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -43,11 +66,13 @@ function WorkspaceDropdown() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    useEffect(()=>{
-        if (currentWorkspace && isLoaded) {
-            setActive?.({ organization: currentWorkspace.id });
+    useEffect(() => {
+        if (currentWorkspace?.id && isLoaded && setActive) {
+            setActive({ organization: currentWorkspace.id }).catch((err) => {
+                console.error("Failed to set active organization:", err);
+            });
         }
-    },[currentWorkspace, isLoaded])
+    }, [currentWorkspace?.id, isLoaded])
 
     return (
         <div className="relative m-4" ref={dropdownRef}>
@@ -86,13 +111,21 @@ function WorkspaceDropdown() {
                                 {currentWorkspace?.id === organization.id && (
                                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                                 )}
+                                <button
+                                    onClick={(e) => handleDeleteWorkspace(e, organization.id)}
+                                    disabled={isDeleting}
+                                    className="text-xs text-red-500 hover:text-red-700 flex-shrink-0 px-1 disabled:opacity-50"
+                                    title="Delete workspace"
+                                >
+                                    ✕
+                                </button>
                             </div>
                         ))}
                     </div>
 
                     <hr className="border-gray-200 dark:border-zinc-700" />
 
-                    <div onClick = {()=>{openCreateOrganization(); setIsOpen(false)}} className="p-2 cursor-pointer rounded group hover:bg-gray-100 dark:hover:bg-zinc-800" >
+                    <div onClick={() => { openCreateOrganization(); setIsOpen(false) }} className="p-2 cursor-pointer rounded group hover:bg-gray-100 dark:hover:bg-zinc-800" >
                         <p className="flex items-center text-xs gap-2 my-1 w-full text-blue-600 dark:text-blue-400 group-hover:text-blue-500 dark:group-hover:text-blue-300">
                             <Plus className="w-4 h-4" /> Create Workspace
                         </p>

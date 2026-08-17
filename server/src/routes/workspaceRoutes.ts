@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import { authPlugin } from "../middleware/authMiddleware";
-import { getUserWorkspaces, addMember } from "../controller/workspaceController";
+import { getUserWorkspaces, addMember,deleteWorkspaceById  } from "../controller/workspaceController";
+
 
 export const workspaceRouter = new Elysia({ prefix: "/api/workspaces" })
   .use(authPlugin)
@@ -38,5 +39,19 @@ export const workspaceRouter = new Elysia({ prefix: "/api/workspaces" })
         workspaceId: t.String(),
         message: t.Optional(t.String()),
       }),
+    }
+  )
+  .delete(
+    "/:workspaceId",
+    async ({ userId, params, set }) => {
+      try {
+        const result = await deleteWorkspaceById(userId, params.workspaceId);
+        set.status = result.status;
+        return result.body;
+      } catch (error) {
+        console.log(error);
+        set.status = 500;
+        return { message: (error as Error).message };
+      }
     }
   );
